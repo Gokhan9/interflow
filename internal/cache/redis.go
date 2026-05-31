@@ -11,6 +11,7 @@ var RedisClient *redis.Client
 func InitRedis(url string) error {
 	options, err := redis.ParseURL("redis://" + url)
 	if err != nil {
+		// Eğer URL parse edilemezse direkt adresi deneyelim
 		options = &redis.Options{
 			Addr: url,
 		}
@@ -18,5 +19,6 @@ func InitRedis(url string) error {
 
 	RedisClient = redis.NewClient(options)
 
+	// Bağlantı Testi için ping atıyoruz.
 	return RedisClient.Ping(context.Background()).Err()
 }
