@@ -32,18 +32,27 @@ func main() {
 	}
 	log.Println("Redis connection successful - ✅")
 
+	gin.SetMode(gin.ReleaseMode) // Production ortamında gereksiz logları kapatmak için
+
 	// ! Gin ile Router Starting
-	r := gin.Default()
+	router := gin.Default() // Logger ve Recovery middleware'leri otomatik olarak ekler, tekrar eklemeye gerek kalmaz.
+
+	/* ! Eğer özel middleware'leri MANUEL eklemek isterseniz, aşağıdaki gibi yapabilirsiniz. Ancak gin.Default() zaten bu middleware'leri içerdiği için, tekrar eklemeye gerek yok.
+	r := gin.New()
+
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	*/
 
 	// ! TEST Endpoint
-	r.GET("/health", func(c *gin.Context) {
+	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "up",
 		})
 	})
 
 	log.Printf("Gateway is running on this port: %s", cfg.Port)
-	if err := r.Run(":" + cfg.Port); err != nil {
+	if err := router.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Server Başlatılamadı : %v", err)
 	}
 }
