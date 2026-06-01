@@ -5,6 +5,7 @@ import (
 
 	"interflow/internal/cache"
 	"interflow/internal/config"
+	"interflow/internal/middleware"
 	"interflow/internal/repository"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +19,13 @@ func main() {
 		log.Fatalf("Error. Config is not Loaded: %v", err)
 	}
 
-	// ! Database Bağlantısı
+	// ! Database Bağlantısı (Connection dosyasına taşıdım.)
 	err = repository.InitDB(cfg.DBURL)
 	if err != nil {
 		log.Fatalf("Database connection error: %v", err)
 	}
 	log.Println("Database connection successful - ✅")
+	queries := repository.New(repository.DB) // Repository katmanını başlatıyoruz. Bu, veritabanı işlemlerini gerçekleştirmek için kullanılacak sorguları içerir. Repository.New fonksiyonu, pgxpool.Pool türünde bir veritabanı bağlantısı alır ve bu bağlantıyı kullanarak sorguları hazırlar. Bu sayede, uygulamanın diğer bölümlerinde veritabanı işlemleri için bu sorguları kullanabiliriz.
 
 	// ! Redis Bağlantısı
 	err = cache.InitRedis(cfg.RedisURL)
@@ -43,6 +45,10 @@ func main() {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	*/
+
+	// ? MIDDLEWARELAR
+	router.Use(middleware.AuthMiddleware(queries)) // Authentication middleware'ı tüm route'lara uygular. Her request'te API Key kontrolü yapar ve geçerli değilse 401 Unauthorized döner.
+	router.Use(middleware.RateLimitMiddleware())   // Rate Limiting middleware'ı tüm route'lara uygular. Her kullanıcı için belirli bir süre içinde kaç istek attığını takip eder ve limit aşılırsa 429 Too Many Requests döner.
 
 	// ! TEST Endpoint
 	router.GET("/health", func(c *gin.Context) {
