@@ -2,23 +2,26 @@ package cache
 
 import (
 	"context"
+	"strings"
 
-	"github.com/redis/go-redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
-var RedisClient *redis.Client
+var RDB *redis.Client
 
 func InitRedis(url string) error {
-	options, err := redis.ParseURL("redis://" + url)
-	if err != nil {
-		// Eğer URL parse edilemezse direkt adresi deneyelim
-		options = &redis.Options{
-			Addr: url,
-		}
+
+	if !strings.HasPrefix(url, "redis://") {
+		url = "redis://" + url
 	}
 
-	RedisClient = redis.NewClient(options)
+	options, err := redis.ParseURL(url)
+	if err != nil {
+		return err
+	}
+
+	RDB = redis.NewClient(options)
 
 	// Bağlantı Testi için ping atıyoruz.
-	return RedisClient.Ping(context.Background()).Err()
+	return RDB.Ping(context.Background()).Err()
 }
