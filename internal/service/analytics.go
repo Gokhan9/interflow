@@ -41,6 +41,12 @@ func (s *AnalyticsService) Record(event analytics.UsageEvent) {
 
 func (s *AnalyticsService) worker() {
 	for event := range s.eventChan {
+		log.Printf(
+			"Provider=%s Model=%s Tokens=%d",
+			event.Provider,
+			event.Model,
+			event.TotalTokens,
+		)
 		// Burada DB'ye kayıt işlemi yapılacak (s.repo.CreateUsageLog(...))
 		// Bir hata olursa burada yakalanır, ana isteği etkilemez.
 	}
