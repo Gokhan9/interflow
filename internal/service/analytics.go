@@ -40,6 +40,7 @@ func (s *AnalyticsService) Record(event analytics.UsageEvent) {
 }
 
 func (s *AnalyticsService) worker() {
+	// Channel kapandığında, içeride ki mevcut veriler bitene kadar "for event" döngüsü çalışmaya devam eder, yeni veri girişlerini ise engeller.
 	for event := range s.eventChan {
 		log.Printf(
 			"Provider=%s Model=%s Tokens=%d",
