@@ -12,3 +12,11 @@ RETURNING *;
 INSERT INTO api_keys (user_id, key_value) 
 VALUES ($1, $2) 
 RETURNING *;
+
+-- name: CreateUsageLog :exec
+INSERT INTO usage_logs (
+    api_key_id, provider, model, prompt_tokens,
+    completion_tokens, total_tokens, latency_ms, status_code
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8
+);
