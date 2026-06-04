@@ -59,6 +59,7 @@ func (s *AnalyticsService) worker() {
 			CompletionTokens: pgtype.Int4{Int32: int32(event.CompletionTokens), Valid: true},
 			TotalTokens:      pgtype.Int4{Int32: int32(event.TotalTokens), Valid: true},
 			LatencyMs:        pgtype.Int4{Int32: int32(event.LatencyMs), Valid: true},
+			StatusCode:       pgtype.Int4{Int32: int32(event.StatusCode), Valid: true},
 		})
 
 		if err != nil {
