@@ -16,6 +16,19 @@ type ApiKey struct {
 	CreatedAt pgtype.Timestamptz
 }
 
+type UsageLog struct {
+	ID               int32
+	ApiKeyID         int32
+	Provider         string
+	Model            string
+	PromptTokens     pgtype.Int4
+	CompletionTokens pgtype.Int4
+	TotalTokens      pgtype.Int4
+	LatencyMs        pgtype.Int4
+	StatusCode       pgtype.Int4
+	CreatedAt        pgtype.Timestamptz
+}
+
 type User struct {
 	ID        int32
 	Username  string

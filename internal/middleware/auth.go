@@ -1,13 +1,13 @@
 package middleware
 
 import (
-	"interflow/internal/repository"
+	"interflow/internal/database"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(q *repository.Queries) gin.HandlerFunc {
+func AuthMiddleware(q *database.Queries) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key") //Her request’te X-API-Key header’ını okuyor
 		if apiKey == "" {
@@ -22,7 +22,7 @@ func AuthMiddleware(q *repository.Queries) gin.HandlerFunc {
 		}
 
 		// ! Kullanıcı bilgisi şuan için context içine saklanıyor.
-		c.Set("user", user) //Eğer user var ise, kullanıcı bilgisi context içine saklanır. Böylece sonraki handler’larda bu bilgiye erişilebilir.
+		c.Set("user", user) // Kullanıcı bilgisi request boyunca erişilebilir hale gelir.
 		c.Next()            // Requestlerin devamlılığını sağlar.
 	}
 }

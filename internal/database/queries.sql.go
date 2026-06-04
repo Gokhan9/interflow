@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createAPIKey = `-- name: CreateAPIKey :one
@@ -31,6 +33,40 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const createUsageLog = `-- name: CreateUsageLog :exec
+INSERT INTO usage_logs (
+    api_key_id, provider, model, prompt_tokens,
+    completion_tokens, total_tokens, latency_ms, status_code
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $8
+)
+`
+
+type CreateUsageLogParams struct {
+	ApiKeyID         int32
+	Provider         string
+	Model            string
+	PromptTokens     pgtype.Int4
+	CompletionTokens pgtype.Int4
+	TotalTokens      pgtype.Int4
+	LatencyMs        pgtype.Int4
+	StatusCode       pgtype.Int4
+}
+
+func (q *Queries) CreateUsageLog(ctx context.Context, arg CreateUsageLogParams) error {
+	_, err := q.db.Exec(ctx, createUsageLog,
+		arg.ApiKeyID,
+		arg.Provider,
+		arg.Model,
+		arg.PromptTokens,
+		arg.CompletionTokens,
+		arg.TotalTokens,
+		arg.LatencyMs,
+		arg.StatusCode,
+	)
+	return err
 }
 
 const createUser = `-- name: CreateUser :one

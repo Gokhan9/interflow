@@ -5,6 +5,7 @@ import (
 
 	"interflow/internal/cache"
 	"interflow/internal/config"
+	"interflow/internal/database"
 	"interflow/internal/middleware"
 	"interflow/internal/repository"
 
@@ -25,7 +26,7 @@ func main() {
 		log.Fatalf("Database connection error: %v", err)
 	}
 	log.Println("Database connection successful - ✅")
-	queries := repository.New(repository.DB) // Repository katmanını başlatıyoruz. Bu, veritabanı işlemlerini gerçekleştirmek için kullanılacak sorguları içerir. Repository.New fonksiyonu, pgxpool.Pool türünde bir veritabanı bağlantısı alır ve bu bağlantıyı kullanarak sorguları hazırlar. Bu sayede, uygulamanın diğer bölümlerinde veritabanı işlemleri için bu sorguları kullanabiliriz.
+	queries := database.New(repository.DB) // Repository katmanını başlatıyoruz. Bu, veritabanı işlemlerini gerçekleştirmek için kullanılacak sorguları içerir. Repository.New fonksiyonu, pgxpool.Pool türünde bir veritabanı bağlantısı alır ve bu bağlantıyı kullanarak sorguları hazırlar. Bu sayede, uygulamanın diğer bölümlerinde veritabanı işlemleri için bu sorguları kullanabiliriz.
 
 	// ! Redis Bağlantısı
 	err = cache.InitRedis(cfg.RedisURL)
