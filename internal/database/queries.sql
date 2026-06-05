@@ -1,6 +1,6 @@
 -- name: GetUserByAPIKey :one
-SELECT u.* FROM users u
-JOIN api_keys ak ON u.id = ak.user_id
+SELECT u.*, ak.id as api_key_id FROM users u
+JOIN api_keys ak ON u.id = ak_user_id
 WHERE ak.key_value = $1 AND ak.is_active = true;
 
 -- name: CreateUser :one
