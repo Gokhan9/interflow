@@ -12,7 +12,9 @@ import (
 	"interflow/internal/cache"
 	"interflow/internal/config"
 	"interflow/internal/database"
+	"interflow/internal/handler"
 	"interflow/internal/middleware"
+	"interflow/internal/provider"
 	"interflow/internal/repository"
 	"interflow/internal/service"
 
@@ -38,6 +40,11 @@ func main() {
 	// ? 1- Analytics Service'i 5 WORKER ile başlatıyoruz..
 	analyticsService := service.NewService(queries, 5)
 
+	pManager := provider.NewManager() // Provider Manager ve OpenAI Provider'ı
+	pManager.RegisterProvider(provider.NewOpenAPIProvider(cfg.OpenAIKey))
+
+	chatHandler := handler.NewChatHandler(pManager, analyticsService) // chat handler
+
 	//! Redis Bağlantısı
 	err = cache.InitRedis(cfg.RedisURL)
 	if err != nil {
@@ -53,6 +60,7 @@ func main() {
 	//! MIDDLEWARELAR
 	router.Use(middleware.AuthMiddleware(queries)) // Authentication middleware'ı tüm route'lara uygular. Her request'te API Key kontrolü yapar ve geçerli değilse 401 Unauthorized döner.
 	router.Use(middleware.RateLimitMiddleware())   // Rate Limiting middleware'ı tüm route'lara uygular. Her kullanıcı için belirli bir süre içinde kaç istek attığını takip eder ve limit aşılırsa 429 Too Many Requests döner.
+	router.POST("/v1/chat", chatHandler.HandleChat)
 
 	// ? 2- HTTP-SERVER YAPILANDIRMASI
 	srv := http.Server{
@@ -94,9 +102,4 @@ func main() {
 			"status": "up",
 		})
 	})
-
-	log.Printf("Gateway is running on this port: %s", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("Server Başlatılamadı : %v", err)
-	}
 }
