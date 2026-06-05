@@ -15,14 +15,16 @@ func AuthMiddleware(q *database.Queries) gin.HandlerFunc {
 			return
 		}
 
-		user, err := q.GetUserByAPIKey(c.Request.Context(), apiKey) // API Key varmı diye kontrol et.
+		// GetUserByAPIKey sorgusu güncellendikten sonra bu "resp" içerisinde hem "user" hem de "ApiKeyID" var.
+		resp, err := q.GetUserByAPIKey(c.Request.Context(), apiKey) // API Key varmı diye kontrol et.
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API key"}) // API Key bulunamazsa Invalid hatası ve request kesilir.
 			return
 		}
 
 		// ! Kullanıcı bilgisi şuan için context içine saklanıyor.
-		c.Set("user", user) // Kullanıcı bilgisi request boyunca erişilebilir hale gelir.
-		c.Next()            // Requestlerin devamlılığını sağlar.
+		c.Set("user_id", resp.ID)          // Kullanıcı bilgisi request boyunca erişilebilir hale gelir.
+		c.Set("api_key_id", resp.ApiKeyID) // analytics için kullanılacak.
+		c.Next()                           // Requestlerin devamlılığını sağlar.
 	}
 }
