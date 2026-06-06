@@ -1,25 +1,25 @@
 # 🌊 Interflow
 
-**Interflow** is a high-performance, production-ready AI Gateway designed to provide a unified interface for multiple Large Language Model (LLM) providers. Built with efficiency and scalability in mind, it simplifies the integration, management, and monitoring of AI services.
+**Interflow** is a high-performance, production-ready AI Gateway designed to provide a unified interface for multiple Large Language Model (LLM) providers. Built with Go, it simplifies the integration, management, and monitoring of AI services with built-in authentication, rate limiting, and asynchronous analytics.
 
 ---
 
 ## 🚀 Features
 
-- **Unified API Interface**: Access OpenAI, Gemini, Anthropic, and more through a single, consistent API.
-- **Robust Authentication**: Secure your gateway with API key-based authentication.
-- **Intelligent Rate Limiting**: Redis-backed rate limiting to protect your infrastructure and manage costs.
-- **Detailed Analytics & Logging**: Track token usage, latency, and status codes for every request.
-- **High Performance**: Developed in Go using the Gin framework for minimal overhead and maximum throughput.
-- **SQLC Powered**: Type-safe database interactions with PostgreSQL.
+- **Unified API Interface**: Access multiple LLM providers through a single, consistent `/v1/chat` endpoint.
+- **Robust Authentication**: Secure gateway access using `X-API-Key` header-based authentication.
+- **Intelligent Rate Limiting**: Redis-backed rate limiting (default: 10 requests/minute) to protect your infrastructure.
+- **Asynchronous Analytics**: High-performance usage tracking using a dedicated worker pool to minimize request latency.
+- **SQLC Powered**: Type-safe database interactions with PostgreSQL for logging and management.
+- **Graceful Shutdown**: Ensures all pending analytics data is flushed to the database before the service stops.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Language**: [Go](https://go.dev/) (v1.25+)
+- **Language**: [Go](https://go.dev/) (v1.25.4)
 - **Web Framework**: [Gin Gonic](https://gin-gonic.com/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) (via [pgx](https://github.com/jackc/pgx))
 - **ORM/Tooling**: [sqlc](https://sqlc.dev/)
 - **Caching/Rate Limiting**: [Redis](https://redis.io/)
 - **Configuration**: [Viper](https://github.com/spf13/viper)
@@ -32,16 +32,17 @@
 ```text
 .
 ├── cmd/
-│   └── gateway/            # Application entry point
+│   └── gateway/            # Application entry point (main.go)
 ├── internal/
-│   ├── analytics/          # Usage tracking and event processing
-│   ├── cache/              # Redis client and caching logic
+│   ├── analytics/          # Usage event definitions
+│   ├── cache/              # Redis client and rate limiting logic
 │   ├── config/             # Environment and configuration management
 │   ├── database/           # SQLC generated code and DB models
+│   ├── handler/            # HTTP handlers (Chat, Health)
 │   ├── middleware/         # Auth, Rate Limit, and Logging middlewares
 │   ├── provider/           # LLM provider implementations (OpenAI, etc.)
-│   ├── repository/         # Data access layer
-│   └── service/            # Business logic
+│   ├── repository/         # Database connection and initialization
+│   └── service/            # Business logic (Analytics worker pool)
 ├── migrations/             # PostgreSQL schema migrations
 └── sqlc.yaml               # SQLC configuration
 ```
@@ -52,12 +53,12 @@
 
 ### Prerequisites
 
-- [Go](https://go.dev/doc/install) installed.
-- [PostgreSQL](https://www.postgresql.org/download/) instance.
-- [Redis](https://redis.io/docs/getting-started/) instance.
-- [sqlc](https://docs.sqlc.dev/en/latest/overview/install.html) (optional, for regenerating DB code).
+- **Go**: v1.25.4 or higher
+- **PostgreSQL**: A running instance for persistent storage
+- **Redis**: A running instance for rate limiting
+- **sqlc**: (Optional) For regenerating database code
 
-### Installation
+### Installation & Setup
 
 1. **Clone the repository**:
    ```bash
@@ -72,14 +73,13 @@
    DATABASE_URL=postgres://user:password@localhost:5432/interflow?sslmode=disable
    REDIS_URL=localhost:6379
    OPENAI_API_KEY=your_openai_key
-   GEMINI_API_KEY=your_gemini_key
-   ANTHROPIC_API_KEY=your_anthropic_key
    ```
 
-3. **Run migrations**:
-   (Assuming you have a migration tool or apply manually)
-   ```sql
-   -- Use the scripts in migrations/ folder
+3. **Database Setup**:
+   Apply the migrations located in `migrations/` to your PostgreSQL database.
+   ```bash
+   # Example using golang-migrate
+   migrate -path migrations/ -database "$DATABASE_URL" up
    ```
 
 4. **Install dependencies**:
@@ -94,13 +94,52 @@
 
 ---
 
+## 📡 API Usage
+
+### Authentication
+All requests require an `X-API-Key` header.
+```text
+X-API-Key: your_generated_api_key
+```
+
+### Chat Completion
+**Endpoint**: `POST /v1/chat`
+
+**Request Body**:
+```json
+{
+  "model": "gpt-4o",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, how are you?"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 500
+}
+```
+
+**Example Request**:
+```bash
+curl -X POST http://localhost:8080/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: test-api-key" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Say hello!"}]
+  }'
+```
+
+---
+
 ## 🛣️ Roadmap
 
-- [ ] Implement Anthropic & Gemini providers.
-- [ ] Add dynamic provider routing (failover & load balancing).
-- [ ] Develop a Dashboard for usage monitoring.
-- [ ] Streaming support for chat responses.
-- [ ] Comprehensive Unit & Integration tests.
+- [ ] **Multi-Provider Support**: Add Gemini and Anthropic implementations.
+- [ ] **Dynamic Routing**: Automatic failover and load balancing between providers.
+- [ ] **Streaming**: Support for Server-Sent Events (SSE) for real-time responses.
+- [ ] **Admin Dashboard**: Web interface for managing API keys and viewing analytics.
+- [ ] **Custom Policies**: Per-key rate limits and cost quotas.
 
 ---
 
