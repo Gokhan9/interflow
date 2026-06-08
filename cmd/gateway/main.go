@@ -61,6 +61,12 @@ func main() {
 	router.Use(middleware.AuthMiddleware(queries)) // Authentication middleware'ı tüm route'lara uygular. Her request'te API Key kontrolü yapar ve geçerli değilse 401 Unauthorized döner.
 	router.Use(middleware.RateLimitMiddleware())   // Rate Limiting middleware'ı tüm route'lara uygular. Her kullanıcı için belirli bir süre içinde kaç istek attığını takip eder ve limit aşılırsa 429 Too Many Requests döner.
 	router.POST("/v1/chat", chatHandler.HandleChat)
+	// ! TEST Endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "up",
+		})
+	})
 
 	// ? 2- HTTP-SERVER YAPILANDIRMASI
 	srv := http.Server{
@@ -96,10 +102,4 @@ func main() {
 
 	log.Println("server existing")
 
-	// ! TEST Endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "up",
-		})
-	})
 }
