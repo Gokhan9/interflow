@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("Database connection error: %v", err)
 	}
 	log.Println("Database connection successful - ✅")
-	queries := database.New(repository.DB) // Repository katmanını başlatıyoruz. Bu, veritabanı işlemlerini gerçekleştirmek için kullanılacak sorguları içerir. Repository.New fonksiyonu, pgxpool.Pool türünde bir veritabanı bağlantısı alır ve bu bağlantıyı kullanarak sorguları hazırlar. Bu sayede, uygulamanın diğer bölümlerinde veritabanı işlemleri için bu sorguları kullanabiliriz.
+	queries := database.New(repository.DB) // Repository katmanını başlatıyoruz. Bu, veritabanı işlemlerini gerçekleştirmek için kullanılacak sorguları içerir. Repository.New fonksiyonu, "pgxpool.Pool" türünde bir veritabanı bağlantısı alır ve bu bağlantıyı kullanarak sorguları hazırlar. Bu sayede, uygulamanın diğer bölümlerinde veritabanı işlemleri için bu sorguları kullanabiliriz.
 
 	// ? 1- Analytics Service'i 5 WORKER ile başlatıyoruz..
 	analyticsService := service.NewService(queries, 5)
@@ -43,7 +43,7 @@ func main() {
 	pManager := provider.NewManager() // Provider Manager ve OpenAI Provider'ı
 	pManager.RegisterProvider(provider.NewOpenAPIProvider(cfg.OpenAIKey))
 
-	chatHandler := handler.NewChatHandler(pManager, analyticsService) // chat handler
+	chatHandler := handler.NewChatHandler(pManager, analyticsService) //"pManager, tüm providerları yöneten yapı(OpenAI, Claude)", "analyticsService, loglama ve metrik toplama gibi işler."
 
 	//! Redis Bağlantısı
 	err = cache.InitRedis(cfg.RedisURL)
