@@ -11,11 +11,30 @@ import (
 
 func RateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID := c.GetInt32("user_id")            // Kullanıcı ID'sini context'ten alıyoruz. Bu ID, AuthMiddleware tarafından context'e eklenmiş olmalıdır. Eğer kullanıcı ID'si bulunamazsa, varsayılan olarak 0 alınır.
-		key := fmt.Sprintf("Ratelimit:%d", userID) // Redis'te her kullanıcı için benzersiz bir anahtar oluşturuyoruz. Bu anahtar, kullanıcının ID'sine dayanır ve "Ratelimit:" öneki ile başlar. Örneğin, kullanıcı ID'si 123 ise, anahtar "Ratelimit:123" olacaktır
+		val, exists := c.Get("user_id")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+			return
+		}
 
-		ctx := c.Request.Context()                      // Gin'in context'i, HTTP isteğiyle ilişkili bir context sağlar. Bu context, isteğin yaşam döngüsü boyunca geçerlidir ve isteğe özgü bilgileri taşıyabilir.
-		count, err := cache.RDB.Incr(ctx, key).Result() // Redis'te anahtarın değerini "1" arttırmak için Incr kullanıyoruz. Eğer anahtar daha önce oluşturulmamışsa, Redis bu anahtarı "0" olarak başlatır ve ardından "1" ekler, böylece ilk kullanımda değer "1" olur. Incr komutu, anahtarın yeni değerini döndürür. Eğer bir hata oluşursa, bu hata err değişkenine atanır.
+		userID, ok := val.(int32)
+		if !ok {
+			// Eğer int32 değilse, belki int gelmiştir (bazı durumlarda otomatik dönüşebiliyor)
+			if intVal, ok := val.(int); ok {
+				userID = int32(intVal)
+			} else {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "invalid user_id type in context"})
+				return
+			}
+		}
+
+		key := fmt.Sprintf("Ratelimit:%d", userID)
+		ctx := c.Request.Context()
+		count, err := cache.RDB.Incr(ctx, key).Result()
+		
+		// DEBUG LOG
+		fmt.Printf("[DEBUG] RateLimit - UserID: %d, Key: %s, Count: %d\n", userID, key, count)
+
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "redis error"})
 			return

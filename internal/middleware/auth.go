@@ -8,6 +8,7 @@ import (
 )
 
 func AuthMiddleware(q *database.Queries) gin.HandlerFunc {
+
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key") //Her request’te X-API-Key header’ını okuyor
 		if apiKey == "" {

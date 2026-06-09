@@ -24,7 +24,19 @@ func NewChatHandler(pm *provider.ProviderManager, as *service.AnalyticsService) 
 
 func (h *ChatHandler) HandleChat(c *gin.Context) {
 	//1- CONTEXT'ten API-KEY-ID'yi al. (Middleware'de set ettik.)
-	apiKeyID, _ := c.Get("api_key_id")
+	//apiKeyID, _ := c.Get("api_key_id")
+
+	val, exists := c.Get("api_key_id")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "api_key_id not found in context"})
+		return
+	}
+
+	apiKeyID, ok := val.(int32)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid api_key_id type"})
+		return
+	}
 
 	//2- REQUEST parse
 	var req provider.ChatRequest
@@ -34,7 +46,7 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 	}
 
 	//3- Provider'ı bul(openai)
-	providerName := c.GetHeader("")
+	providerName := c.GetHeader("X-Provider")
 	if providerName == "" {
 		providerName = "openai"
 	}
@@ -56,16 +68,24 @@ func (h *ChatHandler) HandleChat(c *gin.Context) {
 		statusCode = http.StatusInternalServerError
 	}
 
-	h.analytics.Record(analytics.UsageEvent{
-		APIKeyID:         int(apiKeyID.(int32)),
-		Provider:         providerName,
-		Model:            req.Model,
-		PromptTokens:     resp.Usage.PromptTokens,
-		CompletionTokens: resp.Usage.CompletionTokens,
-		TotalTokens:      resp.Usage.TotalTokens,
-		LatencyMs:        latency,
-		StatusCode:       statusCode,
-	})
+	usageEvent := analytics.UsageEvent{
+		APIKeyID: int(apiKeyID),
+		Provider: providerName,
+		Model:    req.Model,
+		//PromptTokens:     resp.Usage.PromptTokens,
+		//CompletionTokens: resp.Usage.CompletionTokens,
+		//TotalTokens:      resp.Usage.TotalTokens,
+		LatencyMs:  latency,
+		StatusCode: statusCode,
+	}
+
+	if resp != nil {
+		usageEvent.PromptTokens = resp.Usage.PromptTokens
+		usageEvent.CompletionTokens = resp.Usage.CompletionTokens
+		usageEvent.TotalTokens = resp.Usage.TotalTokens
+	}
+
+	h.analytics.Record(usageEvent)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

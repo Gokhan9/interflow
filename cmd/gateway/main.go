@@ -55,18 +55,19 @@ func main() {
 	gin.SetMode(gin.ReleaseMode) // Production ortamında gereksiz logları kapatmak için
 
 	//! Gin ile Router Starting
-	router := gin.Default() // Logger ve Recovery middleware'leri otomatik olarak ekler, tekrar eklemeye gerek kalmaz.
+	router := gin.Default()
 
-	//! MIDDLEWARELAR
-	router.Use(middleware.AuthMiddleware(queries)) // Authentication middleware'ı tüm route'lara uygular. Her request'te API Key kontrolü yapar ve geçerli değilse 401 Unauthorized döner.
-	router.Use(middleware.RateLimitMiddleware())   // Rate Limiting middleware'ı tüm route'lara uygular. Her kullanıcı için belirli bir süre içinde kaç istek attığını takip eder ve limit aşılırsa 429 Too Many Requests döner.
-	router.POST("/v1/chat", chatHandler.HandleChat)
-	// ! TEST Endpoint
+	// ! TEST Endpoint (Public)
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "up",
 		})
 	})
+
+	//! MIDDLEWARELAR
+	router.Use(middleware.AuthMiddleware(queries))
+	router.Use(middleware.RateLimitMiddleware())
+	router.POST("/v1/chat", chatHandler.HandleChat)
 
 	// ? 2- HTTP-SERVER YAPILANDIRMASI
 	srv := http.Server{

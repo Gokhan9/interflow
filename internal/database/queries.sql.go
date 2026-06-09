@@ -37,8 +37,14 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 
 const createUsageLog = `-- name: CreateUsageLog :exec
 INSERT INTO usage_logs (
-    api_key_id, provider, model, prompt_tokens,
-    completion_tokens, total_tokens, latency_ms, status_code
+    api_key_id, 
+    provider, 
+    model, 
+    prompt_tokens,
+    completion_tokens, 
+    total_tokens, 
+    latency_ms, 
+    status_code
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8
 )
@@ -83,14 +89,26 @@ func (q *Queries) CreateUser(ctx context.Context, username string) (User, error)
 }
 
 const getUserByAPIKey = `-- name: GetUserByAPIKey :one
-SELECT u.id, u.username, u.created_at FROM users u
+SELECT u.id, u.username, u.created_at, ak.id as api_key_id FROM users u
 JOIN api_keys ak ON u.id = ak.user_id
 WHERE ak.key_value = $1 AND ak.is_active = true
 `
 
-func (q *Queries) GetUserByAPIKey(ctx context.Context, keyValue string) (User, error) {
+type GetUserByAPIKeyRow struct {
+	ID        int32
+	Username  string
+	CreatedAt pgtype.Timestamptz
+	ApiKeyID  int32
+}
+
+func (q *Queries) GetUserByAPIKey(ctx context.Context, keyValue string) (GetUserByAPIKeyRow, error) {
 	row := q.db.QueryRow(ctx, getUserByAPIKey, keyValue)
-	var i User
-	err := row.Scan(&i.ID, &i.Username, &i.CreatedAt)
+	var i GetUserByAPIKeyRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.CreatedAt,
+		&i.ApiKeyID,
+	)
 	return i, err
 }
