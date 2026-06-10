@@ -1,8 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 type GeminiProvider struct {
@@ -39,7 +42,6 @@ func (p *GeminiProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 	}
 
 	//3.Request objesi oluşturmak
-
 	geminiReq := geminiRequest{
 		Contents: geminiMessages,
 		GenerationConfig: geminiConfig{
@@ -47,4 +49,28 @@ func (p *GeminiProvider) Chat(ctx context.Context, req ChatRequest) (*ChatRespon
 			MaxOutputTokens: req.MaxTokens,
 		},
 	}
+
+	//4. json(marshal)
+	body, err := json.Marshal(geminiReq)
+	if err != nil {
+		return nil, fmt.Errorf("Gemini marshal error: %v", err)
+	}
+
+	//5. http isteği
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, fmt.Errorf("Gemini request creation error: %v", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application.json")
+
+	//6. send request
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("Gemini API request error: %v", err)
+	}
+
+	defer resp.Body.Close()
+
 }
