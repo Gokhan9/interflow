@@ -7,11 +7,12 @@
 ## 🚀 Features
 
 - **Unified API Interface**: Access multiple LLM providers through a single, consistent `/v1/chat` endpoint.
+- **Multi-Provider Support**: Supports **OpenAI** and **Gemini** (Google AI) out of the box.
 - **Robust Authentication**: Secure gateway access using `X-API-Key` header-based authentication.
-- **Intelligent Rate Limiting**: Redis-backed rate limiting (default: 10 requests/minute) to protect your infrastructure.
+- **Intelligent Rate Limiting**: Redis-backed rate limiting (default: 10 requests/minute per user) to protect your infrastructure.
 - **Asynchronous Analytics**: High-performance usage tracking using a dedicated worker pool to minimize request latency.
 - **SQLC Powered**: Type-safe database interactions with PostgreSQL for logging and management.
-- **Graceful Shutdown**: Ensures all pending analytics data is flushed to the database before the service stops.
+- **Graceful Shutdown**: Ensures all pending analytics data is flushed to the database and all connections are closed safely before the service stops.
 
 ---
 
@@ -40,7 +41,7 @@
 │   ├── database/           # SQLC generated code and DB models
 │   ├── handler/            # HTTP handlers (Chat, Health)
 │   ├── middleware/         # Auth, Rate Limit, and Logging middlewares
-│   ├── provider/           # LLM provider implementations (OpenAI, etc.)
+│   ├── provider/           # LLM provider implementations (OpenAI, Gemini)
 │   ├── repository/         # Database connection and initialization
 │   └── service/            # Business logic (Analytics worker pool)
 ├── migrations/             # PostgreSQL schema migrations
@@ -73,6 +74,7 @@
    DATABASE_URL=postgres://user:password@localhost:5432/interflow?sslmode=disable
    REDIS_URL=localhost:6379
    OPENAI_API_KEY=your_openai_key
+   GEMINI_API_KEY=your_gemini_key
    ```
 
 3. **Database Setup**:
@@ -102,6 +104,11 @@ All requests require an `X-API-Key` header.
 X-API-Key: your_generated_api_key
 ```
 
+### Provider Selection
+You can specify the LLM provider using the `X-Provider` header. If omitted, it defaults to `openai`.
+- `openai`
+- `gemini`
+
 ### Chat Completion
 **Endpoint**: `POST /v1/chat`
 
@@ -120,13 +127,28 @@ X-API-Key: your_generated_api_key
 }
 ```
 
-**Example Request**:
+**Example Requests**:
+
+#### OpenAI Request
 ```bash
 curl -X POST http://localhost:8080/v1/chat \
   -H "Content-Type: application/json" \
   -H "X-API-Key: test-api-key" \
+  -H "X-Provider: openai" \
   -d '{
     "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "Say hello!"}]
+  }'
+```
+
+#### Gemini Request
+```bash
+curl -X POST http://localhost:8080/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: test-api-key" \
+  -H "X-Provider: gemini" \
+  -d '{
+    "model": "gemini-1.5-flash",
     "messages": [{"role": "user", "content": "Say hello!"}]
   }'
 ```
@@ -135,9 +157,10 @@ curl -X POST http://localhost:8080/v1/chat \
 
 ## 🛣️ Roadmap
 
-- [ ] **Multi-Provider Support**: Add Gemini and Anthropic implementations.
+- [x] **Multi-Provider Support**: Initial implementation for OpenAI and Gemini.
 - [ ] **Dynamic Routing**: Automatic failover and load balancing between providers.
 - [ ] **Streaming**: Support for Server-Sent Events (SSE) for real-time responses.
+- [ ] **Additional Providers**: Add Anthropic (Claude) and local models (Ollama).
 - [ ] **Admin Dashboard**: Web interface for managing API keys and viewing analytics.
 - [ ] **Custom Policies**: Per-key rate limits and cost quotas.
 
